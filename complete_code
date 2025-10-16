@@ -1,0 +1,55 @@
+# How has income distribution among the top four quintiles of the population in China evolved between 1981 and 2021?
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+# Folders
+data_raw_folder = "data_raw/"
+data_clean_folder = "data_clean/"
+figures_folder = "figures/"
+
+# Load CSV
+filename = "poverty_chn_filtered.csv"  # Filtered dataset with only relevant rows
+df = pd.read_csv(os.path.join(data_raw_folder, filename))
+
+# Keep only needed columns
+df = df[["Year", "Indicator Name", "Value"]]
+
+# Convert Year and Value to numeric, drop invalid rows
+df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+df["Value"] = pd.to_numeric(df["Value"], errors="coerce")
+df = df.dropna(subset=["Year", "Value"])
+
+# Pivot indicators into separate columns
+df_pivot = df.pivot(index="Year", columns="Indicator Name", values="Value").reset_index()
+df_pivot = df_pivot.sort_values("Year")
+
+print("Pivoted China dataset:")
+display(df_pivot)
+
+# Interpolate missing values for smooth plotting (optional)
+df_plot = df_pivot.interpolate(method='linear')
+
+# Plot the indicators
+plt.figure(figsize=(10,6))
+plt.plot(df_plot["Year"], df_plot["Income share held by highest 20%"], 
+         marker='o', linestyle='-', label="Income share held by highest 20%")
+plt.plot(df_plot["Year"], df_plot["Income share held by second 20%"], 
+         marker='o', linestyle='-', label="Income share held by second 20%")
+plt.plot(df_plot["Year"], df_plot["Income share held by third 20%"], 
+         marker='o', linestyle='-', label="Income share held by third 20%")
+plt.plot(df_plot["Year"], df_plot["Income share held by fourth 20%"], 
+         marker='o', linestyle='-', label="Income share held by fourth 20%")
+
+plt.title("China: Evolution of income distribution among the top four quintiles of the population (1981-2021)")
+plt.xlabel("Year")
+plt.ylabel("Percentage")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig(os.path.join(figures_folder, "china_evolution_of_income_distri_among_the_top_four_quintiles.png"))
+plt.show()
+
+# Save cleaned CSV
+df_pivot.to_csv(os.path.join(data_clean_folder, "china_evolution_of_income_distri_among_the_top_four_quintiles"), index=False)
